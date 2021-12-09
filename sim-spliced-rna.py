@@ -87,7 +87,9 @@ def makeAltCopy(gene,haplotype,variants):
                 if(c==variant.ref or c==variant.alt): matches+=1
                 else: mismatches+=1
             if(variant.genotype[haplotype]>0):
-                array[pos]=variant.alt
+                c=variant.alt
+                if(gene.getStrand()=="-"): c=Translation.reverseComplement(c)
+                array[pos]=c
         transcript.sequence="".join(array)
     return altGene
 

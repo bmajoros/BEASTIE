@@ -54,7 +54,7 @@ def fisher(data):
 def betabin(data):
     for case in data:
         p=stats.betabinom.cdf(case.alt2,case.alt2+case.ref2,
-                              case.alt1+1,case.alt2+1)
+                              case.alt1+1,case.ref1+1) #case.alt2+1)
         case.betabinomP=p
         
 #=========================================================================

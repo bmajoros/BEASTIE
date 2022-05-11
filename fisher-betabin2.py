@@ -13,8 +13,11 @@ from builtins import (bytes, dict, int, list, object, range, str, ascii,
 import sys
 import math
 import ProgramName
+from Pipe import Pipe
 import numpy as np
 from scipy import stats
+
+MAX_N=1000
 
 class Case:
     def __init__(self,alt1,ref1,alt2,ref2,cat):
@@ -40,10 +43,13 @@ def simNulls_OLD(numCases,N1,N2,altFreq):
             break
     return cases
 
-def simNulls(numCases,N1,N2,altFreq):
+def simNulls(numCases,N1,altFreq):
     cases=[]
     for i in range(numCases):
-        (alt1,ref1)=binom(N1,altFreq)
+        alt1=None; ref1=None
+        while(True):
+            (alt1,ref1)=binom(N1,altFreq)
+            if(alt1>0 and ref1>0): break
         while(True):
             n=stats.nbinom.rvs(2,0.06,size=1)[0]
             (alt2,ref2)=binom(n,altFreq)
@@ -74,9 +80,16 @@ def runNewModel(data):
     P=[]
     for case in data:
         #print(case.alt1,case.ref1,case.alt2,case.ref2)
-        p=newModel(case.alt2+case.ref2,case.alt1,case.ref1)
+        p=pvalue(case.alt2+case.ref2,case.alt1,case.ref1)
+        #p=newModel(case.alt2+case.ref2,case.alt1,case.ref1)
         P.append(p)
     return P
+
+def pvalue(n,alpha,beta):
+    s=0
+    for i in range(n,MAX_N):
+        s+=newModel(i,alpha,beta)
+    return s
 
 def newModel(n,alpha,beta):
     s=math.log(alpha) if alpha>0 else 0
@@ -92,33 +105,44 @@ def getType1(P):
         if(p<0.05): errors+=1
     rate=float(errors)/float(len(P))
     return rate
-        
+
+def runJags(dat):
+    P=[]
+    for case in data:
+        cmd="git/run-jags.py git/genotype.bug "+str(case.alt1)+" "+\
+            str(case.ref1)+" "+str(case.alt2+case.ref2)
+        p=float(Pipe.run(cmd))
+        P.append(p)
+    return P
+
 #=========================================================================
 # main()
 #=========================================================================
-if(len(sys.argv)!=7):
-    exit(ProgramName.get()+" <#cases-per-category> <N1> <N2> <alt-freq> <fisher-out> <betabin-out>\n")
-(numCases,N1,N2,altFreq,fisherFile,betabinFile)=sys.argv[1:]
+if(len(sys.argv)!=4):
+    exit(ProgramName.get()+" <#cases-per-category> <N1> <alt-freq>\n")
+(numCases,N1,altFreq)=sys.argv[1:]
 numCases=int(numCases)
-N1=int(N1); N2=int(N2)
+N1=int(N1)
 altFreq=float(altFreq)
 
 # Simulate
-data=simNulls(numCases,N1,N2,altFreq)
+data=simNulls(numCases,N1,altFreq)
 
 # Run tests
+jagsP=runJags(data)
 fisherP=fisher(data)
 betabinP=betabin(data)
 newModelP=runNewModel(data)
-print(newModelP)
 
 # Output results
 fisherType1=getType1(fisherP)
 betabinType1=getType1(betabinP)
 newModelType1=getType1(newModelP)
+jagsType1=getType1(jagsP)
 print("Fisher Type I:",fisherType1)
 print("Betabin Type I:",betabinType1)
 print("New model Type I:",newModelType1)
+print("JAGS Type I:",jagsType1)
 
 #FISHER=open(fisherFile,"wt")
 #BETABIN=open(betabinFile,"wt")

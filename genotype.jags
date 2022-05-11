@@ -1,0 +1,11 @@
+model in git/genotype.bug
+data in genotype-data.R
+compile, nchains(2)
+parameters in genotype-init.R, chain(1)
+parameters in genotype-init.R, chain(2)
+initialize
+update 1000
+monitor n
+update 10000
+coda *
+

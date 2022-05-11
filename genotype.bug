@@ -1,0 +1,7 @@
+model {
+  p ~ dbeta(alpha+1,beta+1);
+  #x ~ dbin(p,n);
+  x ~ dbin(0.5,n);
+  n ~ dnegbin(0.0000000001,1)I(1,1000000);
+}
+

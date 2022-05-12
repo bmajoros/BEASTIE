@@ -15,8 +15,8 @@ import ProgramName
 import TempFilename
 from Pipe import Pipe
 
-WARMUP=1000
-KEEPERS=10000
+WARMUP=300 #1000
+KEEPERS=1000 # 10000
 SCRIPT_FILE=TempFilename.generate("jags.script")
 DATA_FILE=TempFilename.generate("jags.data")
 INIT_FILE=TempFilename.generate("jags.init")
@@ -83,5 +83,5 @@ Pipe.run(cmd)
 samples=readSamples("CODAchain1.txt")
 pvalue=getP(samples,n)
 print(pvalue)
-
+exit(0)
 

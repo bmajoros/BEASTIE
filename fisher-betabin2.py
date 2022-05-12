@@ -16,8 +16,10 @@ import ProgramName
 from Pipe import Pipe
 import numpy as np
 from scipy import stats
+from SummaryStats import SummaryStats
 
 MAX_N=1000
+TOLERANCE=0.000001 #0.0001
 
 class Case:
     def __init__(self,alt1,ref1,alt2,ref2,cat):
@@ -52,12 +54,37 @@ def simNulls(numCases,N1,altFreq):
             if(alt1>0 and ref1>0): break
         while(True):
             n=stats.nbinom.rvs(2,0.06,size=1)[0]
+            if(n<1): continue
             (alt2,ref2)=binom(n,altFreq)
-            if(alt2>0 and ref2>0): continue
+            #if(alt2>0 and ref2>0): continue
+            if(alt2>0): continue
             cases.append(Case(alt1,ref1,alt2,ref2,0))
             break
     return cases
 
+def nullPredictor(n,alpha,beta):
+    Ns=[]
+    i=0
+    while(i<1000):
+        p=stats.beta.rvs(alpha+1,beta+1,size=1)[0]
+        n=stats.nbinom.rvs(2,0.06,size=1)[0]
+        if(n<1): continue
+        (alt2,ref2)=binom(n,p)
+        if(alt2>0 and ref2>0): continue
+        Ns.append(n)
+        i+=1
+    num=len(Ns)
+    numGreater=0
+    for x in Ns:
+        if(x>=n): numGreater+=1
+    return float(numGreater)/float(num)
+
+def runNullPredictor(data):
+    P=[]
+    for case in data:
+        p=nullPredictor(case.alt2+case.ref2,case.alt1,case.ref1)
+        P.append(p)
+    return P
 
 def fisher(data):
     P=[]
@@ -79,16 +106,23 @@ def betabin(data):
 def runNewModel(data):
     P=[]
     for case in data:
-        #print(case.alt1,case.ref1,case.alt2,case.ref2)
         p=pvalue(case.alt2+case.ref2,case.alt1,case.ref1)
-        #p=newModel(case.alt2+case.ref2,case.alt1,case.ref1)
         P.append(p)
     return P
 
 def pvalue(n,alpha,beta):
     s=0
+    for i in range(1,n):
+        dx=newModel(i,alpha,beta)
+        s+=dx
+    return 1-s
+
+def pvalue_OLD(n,alpha,beta):
+    s=0
     for i in range(n,MAX_N):
-        s+=newModel(i,alpha,beta)
+        dx=newModel(i,alpha,beta)
+        s+=dx
+        if(dx<TOLERANCE): break
     return s
 
 def newModel(n,alpha,beta):
@@ -106,14 +140,26 @@ def getType1(P):
     rate=float(errors)/float(len(P))
     return rate
 
-def runJags(dat):
+def runJags(data,nMu,nSD):
     P=[]
+    tau=1/nSD
     for case in data:
-        cmd="git/run-jags.py git/genotype.bug "+str(case.alt1)+" "+\
-            str(case.ref1)+" "+str(case.alt2+case.ref2)
+        cmd="/hpc/group/majoroslab/BEASTIE/git/run-jags.py /hpc/group/majoroslab/BEASTIE/git/genotype.bug "+str(case.alt1)+" "+\
+            str(case.ref1)+" "+str(case.alt2+case.ref2)+\
+            str(nMu)+" "+str(nSD)
         p=float(Pipe.run(cmd))
         P.append(p)
     return P
+
+def empiricalN(data):
+    array=[]
+    for case in data:
+        n=case.alt2+case.ref2
+        array.append(n)
+    logs=[log(x) for x in array]
+    (mean,SD,Min,Max)=SummaryStats.summaryStats(array)
+    # JAGS wanTs tau=1/SD
+    return (mean,SD)
 
 #=========================================================================
 # main()
@@ -127,29 +173,28 @@ altFreq=float(altFreq)
 
 # Simulate
 data=simNulls(numCases,N1,altFreq)
+(mu,sd)=empiricalN(data)
 
 # Run tests
-jagsP=runJags(data)
 fisherP=fisher(data)
 betabinP=betabin(data)
 newModelP=runNewModel(data)
+jagsP=runJags(data,mu,sd)
+#nullPredP=runNullPredictor(data)
 
 # Output results
 fisherType1=getType1(fisherP)
 betabinType1=getType1(betabinP)
 newModelType1=getType1(newModelP)
 jagsType1=getType1(jagsP)
+#nullPredType1=getType1(nullPredP)
+
 print("Fisher Type I:",fisherType1)
 print("Betabin Type I:",betabinType1)
 print("New model Type I:",newModelType1)
 print("JAGS Type I:",jagsType1)
+#print("Null predictor Type I:",nullPredType1)
 
-#FISHER=open(fisherFile,"wt")
-#BETABIN=open(betabinFile,"wt")
-#for case in data:
-    #print(1-case.fisherP,case.cat,sep="\t",file=FISHER)
-    #print(1-case.betabinomP,case.cat,sep="\t",file=BETABIN)
-    #print(case.cat,case.fisherP,case.betabinomP,sep="\t")
-    
+
 
 

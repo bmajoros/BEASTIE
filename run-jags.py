@@ -42,10 +42,11 @@ def writeInitFile(filename):
     print(text,file=OUT)
     OUT.close()
 
-def writeData(filename,alpha,beta):
+def writeData(filename,alpha,beta,mu,var):
     OUT=open(filename,"wt")
     text="alpha <- "+str(alpha)+"\n"+\
         "beta <- "+str(beta)+"\n"+\
+        "mu <- "+mu+"\nVar <- "+var+"\n"+\
         "x <- 0"
     print(text,file=OUT)
     OUT.close()
@@ -70,15 +71,16 @@ def getP(samples,n):
 #=========================================================================
 # main()
 #=========================================================================
-if(len(sys.argv)!=5):
-    exit(ProgramName.get()+" <model> <alpha> <beta> <n>\n")
-(model,alpha,beta,n)=sys.argv[1:]
+if(len(sys.argv)!=7):
+    exit(ProgramName.get()+" <model> <alpha> <beta> <n> <mu> <var>\n")
+(model,alpha,beta,n,mu,var)=sys.argv[1:]
 n=int(n)
 
 writeScript(SCRIPT_FILE,model,DATA_FILE,INIT_FILE)
 writeInitFile(INIT_FILE)
-writeData(DATA_FILE,alpha,beta)
+writeData(DATA_FILE,alpha,beta,mu,var)
 cmd="jags "+SCRIPT_FILE
+#print(cmd)
 Pipe.run(cmd)
 samples=readSamples("CODAchain1.txt")
 pvalue=getP(samples,n)

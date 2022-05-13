@@ -34,17 +34,6 @@ def binom(N,p):
     ref=N-alt
     return (alt,ref)
 
-def simNulls_OLD(numCases,N1,N2,altFreq):
-    cases=[]
-    for i in range(numCases):
-        while(True):
-            (alt1,ref1)=binom(N1,altFreq)
-            (alt2,ref2)=binom(N2,altFreq)
-            if(alt2>0 and ref2>0): continue
-            cases.append(Case(alt1,ref1,alt2,ref2,0))
-            break
-    return cases
-
 def simNulls(numCases,N1,altFreq):
     cases=[]
     for i in range(numCases):
@@ -58,6 +47,21 @@ def simNulls(numCases,N1,altFreq):
             (alt2,ref2)=binom(n,altFreq)
             #if(alt2>0 and ref2>0): continue
             if(alt2>0): continue
+            cases.append(Case(alt1,ref1,alt2,ref2,0))
+            break
+    return cases
+
+def simAlts(numCases,N1,altFreq):
+    cases=[]
+    for i in range(numCases):
+        alt1=None; ref1=None
+        while(True):
+            (alt1,ref1)=binom(N1,altFreq)
+            if(alt1>0 and ref1>0): break
+        while(True):
+            n=stats.nbinom.rvs(2,0.06,size=1)[0]
+            if(n<1): continue
+            alt2=0; ref2=n
             cases.append(Case(alt1,ref1,alt2,ref2,0))
             break
     return cases
@@ -140,13 +144,19 @@ def getType1(P):
     rate=float(errors)/float(len(P))
     return rate
 
-def runJags(data,nMu,nSD):
+def getPower(P):
+    found=0
+    for p in P:
+        if(p<0.05): found+=1
+    power=float(found)/float(len(P))
+    return power
+
+def runJags(data,nMu,nVar):
     P=[]
-    tau=1/nSD
     for case in data:
         cmd="/hpc/group/majoroslab/BEASTIE/git/run-jags.py /hpc/group/majoroslab/BEASTIE/git/genotype.bug "+str(case.alt1)+" "+\
             str(case.ref1)+" "+str(case.alt2+case.ref2)+\
-            str(nMu)+" "+str(nSD)
+            " "+str(nMu)+" "+str(nVar)
         p=float(Pipe.run(cmd))
         P.append(p)
     return P
@@ -156,10 +166,8 @@ def empiricalN(data):
     for case in data:
         n=case.alt2+case.ref2
         array.append(n)
-    logs=[log(x) for x in array]
     (mean,SD,Min,Max)=SummaryStats.summaryStats(array)
-    # JAGS wanTs tau=1/SD
-    return (mean,SD)
+    return (mean,SD*SD)
 
 #=========================================================================
 # main()
@@ -172,28 +180,46 @@ N1=int(N1)
 altFreq=float(altFreq)
 
 # Simulate
-data=simNulls(numCases,N1,altFreq)
-(mu,sd)=empiricalN(data)
+nulls=simNulls(numCases,N1,altFreq)
+(mu,Var)=empiricalN(nulls)
+alts=simAlts(numCases,N1,altFreq)
 
-# Run tests
-fisherP=fisher(data)
-betabinP=betabin(data)
-newModelP=runNewModel(data)
-jagsP=runJags(data,mu,sd)
-#nullPredP=runNullPredictor(data)
+# Run on nulls
+fisherP=fisher(nulls)
+betabinP=betabin(nulls)
+newModelP=runNewModel(nulls)
+jagsP=runJags(nulls,mu,Var)
+#nullPredP=runNullPredictor(nulls)
 
-# Output results
+# Run on alts
+fisherAltP=fisher(alts)
+betabinAltP=betabin(alts)
+newModelAltP=runNewModel(alts)
+jagsAltP=runJags(alts,mu,Var)
+
+# Compute Type 1 error rate
 fisherType1=getType1(fisherP)
 betabinType1=getType1(betabinP)
 newModelType1=getType1(newModelP)
 jagsType1=getType1(jagsP)
 #nullPredType1=getType1(nullPredP)
 
+# Compute power
+fisherPower=getPower(fisherAltP)
+betabinPower=getPower(betabinAltP)
+newModelPower=getPower(newModelAltP)
+jagsPower=getPower(jagsAltP)
+
 print("Fisher Type I:",fisherType1)
 print("Betabin Type I:",betabinType1)
 print("New model Type I:",newModelType1)
 print("JAGS Type I:",jagsType1)
 #print("Null predictor Type I:",nullPredType1)
+
+print("Fisher power:",fisherPower)
+print("Betabin power:",betabinPower)
+print("New model power:",newModelPower)
+print("JAGS power:",jagsPower)
 
 
 

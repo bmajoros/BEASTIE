@@ -3,6 +3,6 @@ model {
   x ~ dbin(p,n);
   #n ~ dnegbin(0.0000000001,1)I(1,1000000);
   #n ~ dnegbin(0.06,2)I(1,1000000);
-  n ~ dnegbin((Var-mu)/Var,mu*mu/(Var-mu))I(1,1000000);
+  n ~ dnegbin(1-(Var-mu)/Var,mu*mu/(Var-mu))I(1,1000000);
 }
 

@@ -162,11 +162,14 @@ def runJags(data,nMu,nVar):
     return P
 
 def empiricalN(data):
+    #TEMP=open("raw-counts.txt","wt") ###
     array=[]
     for case in data:
         n=case.alt2+case.ref2
+        #print(n,file=TEMP) ###
         array.append(n)
     (mean,SD,Min,Max)=SummaryStats.summaryStats(array)
+    #TEMP.close() ###
     return (mean,SD*SD)
 
 #=========================================================================
@@ -181,8 +184,9 @@ altFreq=float(altFreq)
 
 # Simulate
 nulls=simNulls(numCases,N1,altFreq)
-(mu,Var)=empiricalN(nulls)
 alts=simAlts(numCases,N1,altFreq)
+train=simAlts(numCases,N1,altFreq)
+(mu,Var)=empiricalN(train)
 
 # Run on nulls
 fisherP=fisher(nulls)

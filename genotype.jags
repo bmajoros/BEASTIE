@@ -1,4 +1,4 @@
-model in git/genotype.bug
+model in git/genotype.bugs
 data in genotype-data.R
 compile, nchains(2)
 parameters in genotype-init.R, chain(1)

@@ -1,6 +1,0 @@
-model {
-  p ~ dbeta(alpha+1,beta+1);
-  x ~ dbin(p,n);
-  n ~ dnegbin(1-(Var-mu)/Var,mu*mu/(Var-mu))I(1,1000000);
-}
-

@@ -2,7 +2,7 @@
 #=========================================================================
 # This is OPEN SOURCE SOFTWARE governed by the Gnu General Public
 # License (GPL) version 3, as described at www.opensource.org.
-# Copyright (C)2021 William H. Majoros <bmajoros@alumni.duke.edu>
+# Copyright (C)2022 William H. Majoros <bmajoros@alumni.duke.edu>
 #=========================================================================
 from __future__ import (absolute_import, division, print_function, 
    unicode_literals, generators, nested_scopes, with_statement)
@@ -10,6 +10,7 @@ from builtins import (bytes, dict, int, list, object, range, str, ascii,
    chr, hex, input, next, oct, open, pow, round, super, filter, map, zip)
 # The above imports should allow this program to run in both Python 2 and
 # Python 3.  You might need to update your version of module "future".
+import os
 import sys
 import ProgramName
 import TempFilename
@@ -80,10 +81,13 @@ writeScript(SCRIPT_FILE,model,DATA_FILE,INIT_FILE)
 writeInitFile(INIT_FILE)
 writeData(DATA_FILE,alpha,beta,mu,var)
 cmd="jags "+SCRIPT_FILE
-#print(cmd)
 Pipe.run(cmd)
 samples=readSamples("CODAchain1.txt")
 pvalue=getP(samples,n)
 print(pvalue)
-exit(0)
+
+os.remove(SCRIPT_FILE)
+os.remove(DATA_FILE)
+os.remove(INIT_FILE)
+
 

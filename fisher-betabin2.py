@@ -18,6 +18,9 @@ import numpy as np
 from scipy import stats
 from SummaryStats import SummaryStats
 
+NB_P = 0.0294 # 0.06
+NB_R = 0.496  # 2
+
 MAX_N=1000
 TOLERANCE=0.000001 #0.0001
 
@@ -42,7 +45,7 @@ def simNulls(numCases,N1,altFreq):
             (alt1,ref1)=binom(N1,altFreq)
             if(alt1>0 and ref1>0): break
         while(True):
-            n=stats.nbinom.rvs(2,0.06,size=1)[0]
+            n=stats.nbinom.rvs(NB_R,NB_P,size=1)[0]
             if(n<1): continue
             (alt2,ref2)=binom(n,altFreq)
             #if(alt2>0 and ref2>0): continue
@@ -59,7 +62,7 @@ def simAlts(numCases,N1,altFreq):
             (alt1,ref1)=binom(N1,altFreq)
             if(alt1>0 and ref1>0): break
         while(True):
-            n=stats.nbinom.rvs(2,0.06,size=1)[0]
+            n=stats.nbinom.rvs(NB_R,NB_P,size=1)[0]
             if(n<1): continue
             alt2=0; ref2=n
             cases.append(Case(alt1,ref1,alt2,ref2,0))
@@ -71,7 +74,7 @@ def nullPredictor(n,alpha,beta):
     i=0
     while(i<1000):
         p=stats.beta.rvs(alpha+1,beta+1,size=1)[0]
-        n=stats.nbinom.rvs(2,0.06,size=1)[0]
+        n=stats.nbinom.rvs(NB_R,NB_P,size=1)[0]
         if(n<1): continue
         (alt2,ref2)=binom(n,p)
         if(alt2>0 and ref2>0): continue
@@ -154,7 +157,7 @@ def getPower(P):
 def runJags(data,nMu,nVar):
     P=[]
     for case in data:
-        cmd="/hpc/group/majoroslab/BEASTIE/git/run-jags.py /hpc/group/majoroslab/BEASTIE/git/genotype.bug "+str(case.alt1)+" "+\
+        cmd="/hpc/group/majoroslab/BEASTIE/git/run-jags.py /hpc/group/majoroslab/BEASTIE/git/genotype.bugs "+str(case.alt1)+" "+\
             str(case.ref1)+" "+str(case.alt2+case.ref2)+\
             " "+str(nMu)+" "+str(nVar)
         p=float(Pipe.run(cmd))

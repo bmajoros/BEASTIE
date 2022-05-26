@@ -22,6 +22,7 @@ NB_P = 0.0294 # 0.06
 NB_R = 0.496  # 2
 #MODEL = "/hpc/group/majoroslab/BEASTIE/git/genotype.bugs"
 MODEL = "/hpc/group/majoroslab/BEASTIE/git/genotype2.bugs"
+UNIFORM_MODEL = "/hpc/group/majoroslab/BEASTIE/git/uniform.bugs"
 MAX_N=1000
 TOLERANCE=0.000001 #0.0001
 
@@ -173,6 +174,16 @@ def runJags(data,nMu,nVar):
         P.append(p)
     return P
 
+def runUniform(data,nMu,nVar):
+    P=[]
+    for case in data:
+        cmd="/hpc/group/majoroslab/BEASTIE/git/run-jags.py "+UNIFORM_MODEL+\
+            " "+str(case.alt1)+" "+str(case.alt1+case.ref1)+" "+\
+            str(case.alt2+case.ref2)+" "+str(nMu)+" "+str(nVar)
+        p=float(Pipe.run(cmd))
+        P.append(p)
+    return P
+
 def empiricalN(data):
     #TEMP=open("raw-counts.txt","wt") ###
     array=[]
@@ -205,6 +216,7 @@ fisherP=fisher(nulls)
 betabinP=betabin(nulls)
 newModelP=runNewModel(nulls)
 jagsP=runJags(nulls,mu,Var)
+uniformP=runUniform(nulls,0,0)
 #nullPredP=runNullPredictor(nulls)
 
 # Run on alts
@@ -212,12 +224,14 @@ fisherAltP=fisher(alts)
 betabinAltP=betabin(alts)
 newModelAltP=runNewModel(alts)
 jagsAltP=runJags(alts,mu,Var)
+uniformAltP=runUniform(alts,0,0)
 
 # Compute Type 1 error rate
 fisherType1=getType1(fisherP)
 betabinType1=getType1(betabinP)
 newModelType1=getType1(newModelP)
 jagsType1=getType1(jagsP)
+uniformType1=geType1(uniformP)
 #nullPredType1=getType1(nullPredP)
 
 # Compute power
@@ -225,17 +239,19 @@ fisherPower=getPower(fisherAltP)
 betabinPower=getPower(betabinAltP)
 newModelPower=getPower(newModelAltP)
 jagsPower=getPower(jagsAltP)
+uniformPower=getPower(uniformAltP)
 
 print("Fisher Type I:",fisherType1)
 print("Betabin Type I:",betabinType1)
 print("New model Type I:",newModelType1)
 print("JAGS Type I:",jagsType1)
-#print("Null predictor Type I:",nullPredType1)
+print("UNIFORM Type I:",uniformType1)
 
 print("Fisher power:",fisherPower)
 print("Betabin power:",betabinPower)
 print("New model power:",newModelPower)
 print("JAGS power:",jagsPower)
+print("UNIFORM power:",uniformPower)
 
 
 

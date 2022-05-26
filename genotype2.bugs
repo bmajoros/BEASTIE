@@ -1,0 +1,8 @@
+model {
+  p ~ dunif(0,1);
+  #alpha ~ dbinom(p,alpha+beta)I(1,alpha+beta-1)
+  alpha ~ dbinom(p,beta)T(1,beta-1)
+  x ~ dbin(p,n);
+  n ~ dnegbin(1-(Var-mu)/Var,mu*mu/(Var-mu))I(1,1000000);
+}
+

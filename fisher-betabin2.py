@@ -20,7 +20,8 @@ from SummaryStats import SummaryStats
 
 NB_P = 0.0294 # 0.06
 NB_R = 0.496  # 2
-
+#MODEL = "/hpc/group/majoroslab/BEASTIE/git/genotype.bugs"
+MODEL = "/hpc/group/majoroslab/BEASTIE/git/genotype2.bugs"
 MAX_N=1000
 TOLERANCE=0.000001 #0.0001
 
@@ -43,7 +44,8 @@ def simNulls(numCases,N1,altFreq):
         alt1=None; ref1=None
         while(True):
             (alt1,ref1)=binom(N1,altFreq)
-            if(alt1>0 and ref1>0): break
+            #break
+            if(alt1>0 and ref1>0): break ### 
         while(True):
             n=stats.nbinom.rvs(NB_R,NB_P,size=1)[0]
             if(n<1): continue
@@ -157,9 +159,16 @@ def getPower(P):
 def runJags(data,nMu,nVar):
     P=[]
     for case in data:
-        cmd="/hpc/group/majoroslab/BEASTIE/git/run-jags.py /hpc/group/majoroslab/BEASTIE/git/genotype.bugs "+str(case.alt1)+" "+\
-            str(case.ref1)+" "+str(case.alt2+case.ref2)+\
+        #cmd="/hpc/group/majoroslab/BEASTIE/git/run-jags.py "+MODEL+" "+\
+        #    str(case.alt1)+" "+str(case.ref1)+" "+str(case.alt2+case.ref2)+\
+        #    " "+str(nMu)+" "+str(nVar)
+
+        ###
+        cmd="/hpc/group/majoroslab/BEASTIE/git/run-jags.py "+MODEL+" "+\
+            str(case.alt1)+" "+str(case.alt1+case.ref1)+" "+str(case.alt2+case.ref2)+\
             " "+str(nMu)+" "+str(nVar)
+        ###
+        
         p=float(Pipe.run(cmd))
         P.append(p)
     return P
